@@ -1,87 +1,54 @@
 package com.example.ToDoApp.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import com.example.ToDoApp.model.ToDo;
 import com.example.ToDoApp.service.ToDoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
 
 @Controller
 public class ToDoController {
 
-	@Autowired
-	private ToDoService service;
+    @Autowired
+    private ToDoService service;
 
-	@GetMapping({"/", "viewToDoList"})
-	public String viewAllToDoItems(Model model, @ModelAttribute("message") String message) {
-		model.addAttribute("list", service.getAllToDoItems());
-		model.addAttribute("message", message);
-		
-		return "ViewToDoList";
-	}
+    private static final Logger logger = LoggerFactory.getLogger(ToDoService.class);
 
-	@GetMapping("/updateToDoStatus/{id}")
-	public String updateToDoStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-		if (service.updateStatus(id)) {
-			redirectAttributes.addFlashAttribute("message", "Update Success");
-			return "redirect:/viewToDoList";
-		}
-		
-		redirectAttributes.addFlashAttribute("message", "Update Failure");
-		return "redirect:/viewToDoList";
-	}
+    @PostMapping("/todo")
+    public ResponseEntity saveTodo(@RequestBody ToDo toDo) {
+        service.saveTodo(toDo);
+        logger.info("new todo created with title {}", toDo.getTitle());
+        return ResponseEntity.ok(CREATED);
+    }
 
-	@GetMapping("/addToDoItem")
-	public String addToDoItem(Model model) {
-		model.addAttribute("todo", new ToDo());
-		
-		return "AddToDoItem";
-	}
+    @GetMapping("/todos")
+    public ResponseEntity<List<ToDo>> getTodo() {
+        return new ResponseEntity<List<ToDo>>(service.getTodo(), OK);
+    }
 
-	@PostMapping("/saveToDoItem")
-	public String saveToDoItem(ToDo todo, RedirectAttributes redirectAttributes) {
-		if(service.saveOrUpdateToDoItem(todo)) {
-			redirectAttributes.addFlashAttribute("message", "Save Success");
-			return "redirect:/viewToDoList";
-		}
-		
-		redirectAttributes.addFlashAttribute("message", "Save Failure");
-		return "redirect:/addToDoItem";
-	}
-	
-	@GetMapping("/editToDoItem/{id}")
-	public String editToDoItem(@PathVariable Long id, Model model) {
-		model.addAttribute("todo", service.getToDoItemById(id));
-		
-		return "EditToDoItem";
-	}
+    @GetMapping("/welcome")
+    public ResponseEntity saywelcome(){
+        return ResponseEntity.ok("Hey there!! Welcome to TodoApp");
+    }
+    @PutMapping("/editTodo")
+    public ResponseEntity<Integer> editTodo(@RequestBody ToDo todos) {
+        logger.info("editing the todo for id :{}", todos);
+        return new ResponseEntity<Integer>(service.updateTodo(todos), OK);
+    }
 
-	@PostMapping("/editSaveToDoItem")
-	public String editSaveToDoItem(ToDo todo, RedirectAttributes redirectAttributes) {
-		if(service.saveOrUpdateToDoItem(todo)) {
-			redirectAttributes.addFlashAttribute("message", "Edit Success");
-			return "redirect:/viewToDoList";
-		}
-		
-		redirectAttributes.addFlashAttribute("message", "Edit Failure");
-		return "redirect:/editToDoItem/" + todo.getId();
-	}
-	
-	@GetMapping("/deleteToDoItem/{id}")
-	public String deleteToDoItem(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-		if (service.deleteToDoItem(id)) {
-			redirectAttributes.addFlashAttribute("message", "Delete Success");
-			return "redirect:/viewToDoList";
-		}
-		
-		redirectAttributes.addFlashAttribute("message", "Delete Failure");
-		return "redirect:/viewToDoList";
-	}
-	
+    @DeleteMapping("/deletetodo/{id}")
+    public ResponseEntity deleteTodo(@PathVariable Integer id) {
+        logger.info("Item deleted for id :{}",id);
+        service.deleteTodo(id);
+        return ResponseEntity.ok(OK);
+    }
 }
